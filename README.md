@@ -33,13 +33,6 @@ The server auto-seeds the database on first startup.
 
 ---
 
-## Run Mock Tests (no API key needed)
-
-```powershell
-uv run python -m aionos_assignment.tests.test_mock_flow
-```
-
----
 
 ## Project Structure
 
@@ -50,7 +43,6 @@ src/aionos_assignment/
   graph/        - LangGraph state and workflow
   policies/     - Service rules (cancellation, delay, refund, escalation)
   utils/        - Session memory utilities
-  tests/        - Mock tests
 templates/
   index.html    - HTML chat UI
 .env            - Your API keys (fill in before running)
