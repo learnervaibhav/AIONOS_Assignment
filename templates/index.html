@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SkyAir Support Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f0f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+    .container {
+      width: 100%;
+      max-width: 700px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+    }
+
+    .header {
+      background: #1a4f9f;
+      color: #fff;
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header span.icon { font-size: 1.5rem; }
+
+    .chat-window {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f8fafc;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+    .message.user {
+      background: #1a4f9f;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+    .message.assistant {
+      background: #e8f0fe;
+      color: #1a1a2e;
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+    .message.escalated {
+      border-left: 4px solid #f59e0b;
+    }
+    .escalation-badge {
+      font-size: 0.78rem;
+      color: #b45309;
+      margin-top: 6px;
+      font-weight: bold;
+    }
+    .message.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      align-self: center;
+    }
+
+    .input-area {
+      padding: 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 10px;
+      background: #fff;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-area input:focus { border-color: #1a4f9f; }
+    .input-area button {
+      background: #1a4f9f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .input-area button:hover { background: #1e3a8a; }
+    .input-area button:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .session-info {
+      padding: 6px 16px;
+      font-size: 0.72rem;
+      color: #94a3b8;
+      background: #fff;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .typing {
+      align-self: flex-start;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="icon">&#9992;</span>
+    SkyAir Support Agent
+  </div>
+
+  <div class="chat-window" id="chatWindow">
+    <div class="message assistant">
+      Hello! I'm SkyAir's virtual support agent. I can help you with flight cancellations,
+      delays, refunds, and more. Please share your booking reference (PNR) to get started.
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input
+      type="text"
+      id="userInput"
+      placeholder="Type your message here..."
+      autocomplete="off"
+    />
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <div class="session-info" id="sessionInfo">
+    Initializing session...
+  </div>
+</div>
+
+<script>
+  let SESSION_ID = null;
+
+  // -- Start session on page load -------------------------------------------
+  async function startSession() {
+    try {
+      const res = await fetch('/chat/start', { method: 'POST' });
+      const data = await res.json();
+      SESSION_ID = data.session_id;
+      document.getElementById('sessionInfo').textContent = 'Session: ' + SESSION_ID;
+    } catch (err) {
+      document.getElementById('sessionInfo').textContent = 'Failed to start session. Please refresh.';
+    }
+  }
+
+  // -- Append a message bubble to the chat window ---------------------------
+  function appendMessage(role, text, escalated = false) {
+    const chatWindow = document.getElementById('chatWindow');
+
+    const div = document.createElement('div');
+    div.className = 'message ' + role + (escalated ? ' escalated' : '');
+    div.textContent = text;
+
+    if (escalated) {
+      const badge = document.createElement('div');
+      badge.className = 'escalation-badge';
+      badge.textContent = 'Transferred to human supervisor';
+      div.appendChild(badge);
+    }
+
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function showTyping() {
+    const chatWindow = document.getElementById('chatWindow');
+    const el = document.createElement('div');
+    el.className = 'typing';
+    el.id = 'typingIndicator';
+    el.textContent = 'Agent is typing...';
+    chatWindow.appendChild(el);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  // -- Send user message to the API -----------------------------------------
+  async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendBtn');
+    const text = input.value.trim();
+
+    if (!text || !SESSION_ID) return;
+
+    appendMessage('user', text);
+    input.value = '';
+    btn.disabled = true;
+    showTyping();
+
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, message: text })
+      });
+
+      removeTyping();
+
+      if (!res.ok) {
+        const err = await res.json();
+        appendMessage('error', 'Error: ' + (err.detail || 'Something went wrong.'));
+      } else {
+        const data = await res.json();
+        appendMessage('assistant', data.response, data.escalated);
+      }
+    } catch (err) {
+      removeTyping();
+      appendMessage('error', 'Network error. Please try again.');
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
+  }
+
+  // -- Send on Enter key -----------------------------------------------------
+  document.getElementById('userInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // -- Init ------------------------------------------------------------------
+  startSession();
+</script>
+
+</body>
+</html>

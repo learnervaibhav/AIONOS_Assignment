@@ -1,0 +1,22 @@
+# Core LLM & Agent
+langgraph
+langchain-google-genai
+langchain-core
+
+# API Framework
+fastapi[standard]
+uvicorn[standard]
+python-multipart
+jinja2
+
+# Database
+sqlalchemy
+
+# Config & Utilities
+python-dotenv
+pydantic
+pydantic-settings
+
+# Testing
+pytest
+httpx

@@ -1,0 +1,40 @@
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite3
+airline_agent.db
+
+# IDEs / Editor configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build / Distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# OS Generated
+.DS_Store
+Thumbs.db
+
+# User specific project files
+plan.md
+project_detals.txt
+Agentic_Ai_Factory_Assignment_Brief.docx
+api.txt
+tests/
